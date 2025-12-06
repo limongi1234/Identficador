@@ -17,3 +17,4 @@ public class AtualizarStatusEntregaDTO {
     private String motivoCancelamento;
 
     private String observacoes;
+}
