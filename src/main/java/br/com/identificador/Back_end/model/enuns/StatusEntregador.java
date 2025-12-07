@@ -4,5 +4,6 @@ public enum StatusEntregador {
     ONLINE,
     OFFLINE,
     EM_ENTREGA,
-    PAUSADO
+    PAUSADO,
+    DISPONIVEL
 }
