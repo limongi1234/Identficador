@@ -1,25 +1,46 @@
 package br.com.identificador.Back_end.config;
 
+import br.com.identificador.Back_end.service.CustomUserDetailsService;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
-
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
+
+    private final CustomUserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -49,10 +70,15 @@ public class SecurityConfig {
                         // Perfis públicos e QR codes
                         .requestMatchers("/api/entregadores/perfil/**").permitAll()
                         .requestMatchers("/api/entregadores/qrcode/**").permitAll()
+                        .requestMatchers("/api/qrcode/**").permitAll()
+
+                        // Health check
+                        .requestMatchers("/api/health").permitAll()
 
                         // WebSocket endpoints
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/ws-privado/**").permitAll()
+                        .requestMatchers("/chat/**").permitAll()
 
                         // Console H2 para desenvolvimento
                         .requestMatchers("/h2-console/**").permitAll()
@@ -65,6 +91,9 @@ public class SecurityConfig {
 
                         // Todos os outros endpoints requerem autenticação
                         .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.decoder(jwtDecoder()))
                 )
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.disable())
@@ -107,5 +136,49 @@ public class SecurityConfig {
 
         log.info("Configuração CORS concluída");
         return source;
+    }
+
+    // ==================== CONFIGURAÇÃO JWT ====================
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        log.info("Configurando AuthenticationManager");
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public KeyPair keyPair() {
+        try {
+            log.info("Gerando par de chaves RSA para JWT");
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            return keyPairGenerator.generateKeyPair();
+        } catch (Exception e) {
+            log.error("Erro ao gerar par de chaves RSA", e);
+            throw new RuntimeException("Erro ao gerar par de chaves RSA", e);
+        }
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder() {
+        log.info("Configurando JwtEncoder");
+        KeyPair keyPair = keyPair();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+
+        JWK jwk = new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .build();
+
+        JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+        return new NimbusJwtEncoder(jwks);
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        log.info("Configurando JwtDecoder");
+        KeyPair keyPair = keyPair();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        return NimbusJwtDecoder.withPublicKey(publicKey).build();
     }
 }
