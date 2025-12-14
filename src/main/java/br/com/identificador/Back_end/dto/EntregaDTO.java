@@ -4,6 +4,7 @@ import br.com.identificador.Back_end.model.enuns.StatusEntrega;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder  // ✅ ADICIONE esta anotação
 public class EntregaDTO {
     private Long id;
     private Long entregadorId;
@@ -34,6 +36,9 @@ public class EntregaDTO {
     private LocalDateTime iniciadoEm;
     private LocalDateTime finalizadoEm;
     private LocalDateTime canceladoEm;
+
+    // ✅ REMOVA completamente este método problemático:
+    // public static JsonToken builder() { }
 
     public void setLojaNome(@NotBlank @Size(max = 100) String nome) {
         this.nomeLoja = nome;
