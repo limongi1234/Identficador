@@ -3,6 +3,15 @@ package br.com.identificador.Back_end.controller;
 import br.com.identificador.Back_end.dto.LoginDTO;
 import br.com.identificador.Back_end.model.User;
 import br.com.identificador.Back_end.service.CustomUserDetailsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,6 +36,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Autenticação", description = "Endpoints para autenticação JWT e gerenciamento de sessão")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -34,6 +44,80 @@ public class AuthController {
     private final CustomUserDetailsService userDetailsService;
 
     @PostMapping("/login")
+    @Operation(
+            summary = "Realizar login no sistema",
+            description = """
+                Autentica um usuário (Entregador, Cliente ou Loja) e retorna um token JWT válido por 10 horas.
+                
+                O token deve ser incluído no header Authorization de todas as requisições protegidas:
+                ```
+                Authorization: Bearer {seu-token-jwt}
+                ```
+                """,
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Credenciais de login",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LoginDTO.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Login Entregador",
+                                            value = "{\"email\": \"entregador@email.com\", \"senha\": \"senha123\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "Login Cliente",
+                                            value = "{\"email\": \"cliente@email.com\", \"senha\": \"senha123\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "Login Loja",
+                                            value = "{\"email\": \"loja@email.com\", \"senha\": \"senha123\"}"
+                                    )
+                            }
+                    )
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login realizado com sucesso. Retorna token JWT e informações do usuário",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                    {
+                      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "Bearer",
+                      "expiresIn": 36000,
+                      "user": {
+                        "id": 1,
+                        "nome": "João Silva",
+                        "email": "joao@email.com",
+                        "telefone": "(21) 98765-4321",
+                        "userType": "Entregador",
+                        "role": "ROLE_ENTREGADOR"
+                      }
+                    }
+                    """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Credenciais inválidas",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                    {
+                      "error": "Credenciais inválidas",
+                      "message": "Email ou senha incorretos"
+                    }
+                    """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erro interno no servidor"
+            )
+    })
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO) {
         try {
             log.info("Tentativa de login para: {}", loginDTO.getEmail());
@@ -105,7 +189,42 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<Map<String, Object>> validateToken(Authentication authentication) {
+    @Operation(
+            summary = "Validar token JWT",
+            description = "Verifica se o token JWT fornecido é válido e retorna informações sobre o token",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Token válido",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                    {
+                      "valid": true,
+                      "email": "joao@email.com",
+                      "authorities": ["ROLE_ENTREGADOR"]
+                    }
+                    """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Token inválido ou expirado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                    {
+                      "valid": false,
+                      "message": "Token inválido ou expirado"
+                    }
+                    """)
+                    )
+            )
+    })
+    public ResponseEntity<Map<String, Object>> validateToken(
+            @Parameter(hidden = true) Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
             Map<String, Object> response = new HashMap<>();
             response.put("valid", true);
@@ -125,7 +244,40 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Map<String, Object>> getCurrentUser(Authentication authentication) {
+    @Operation(
+            summary = "Obter dados do usuário autenticado",
+            description = "Retorna as informações completas do usuário atualmente autenticado baseado no token JWT",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Informações do usuário retornadas com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                    {
+                      "id": 1,
+                      "nome": "João Silva",
+                      "email": "joao@email.com",
+                      "telefone": "(21) 98765-4321",
+                      "userType": "Entregador",
+                      "role": "ROLE_ENTREGADOR"
+                    }
+                    """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autenticado - token ausente ou inválido"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erro ao buscar informações do usuário"
+            )
+    })
+    public ResponseEntity<Map<String, Object>> getCurrentUser(
+            @Parameter(hidden = true) Authentication authentication) {
         try {
             if (authentication == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
