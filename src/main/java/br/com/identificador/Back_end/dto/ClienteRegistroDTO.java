@@ -1,8 +1,7 @@
 package br.com.identificador.Back_end.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,28 +9,64 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Dados para registro ou atualização de cliente")
 public class ClienteRegistroDTO {
 
     @NotBlank(message = "Nome é obrigatório")
-    @Size(max = 100, message = "Nome deve ter no máximo 100 caracteres")
+    @Size(max = 100)
+    @Schema(
+            description = "Nome completo do cliente",
+            example = "Maria Santos",
+            required = true,
+            maxLength = 100
+    )
     private String nome;
 
     @NotBlank(message = "Email é obrigatório")
-    @Email(message = "Email deve ter formato válido")
+    @Email(message = "Email deve ser válido")
+    @Size(max = 100)
+    @Schema(
+            description = "Email do cliente (usado para login)",
+            example = "maria.santos@email.com",
+            required = true,
+            maxLength = 100
+    )
     private String email;
 
     @NotBlank(message = "Telefone é obrigatório")
-    @Size(max = 20, message = "Telefone deve ter no máximo 20 caracteres")
+    @Size(max = 20)
+    @Schema(
+            description = "Telefone de contato",
+            example = "(21) 98888-7777",
+            required = true,
+            maxLength = 20
+    )
     private String telefone;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
+    @Size(min = 6, max = 100)
+    @Schema(
+            description = "Senha de acesso",
+            example = "senha123",
+            required = true,
+            minLength = 6,
+            maxLength = 100
+    )
     private String senha;
 
-    @Size(max = 14, message = "CPF deve ter no máximo 14 caracteres")
+    @Size(max = 20)
+    @Schema(
+            description = "CPF do cliente (opcional)",
+            example = "12345678900",
+            maxLength = 20
+    )
     private String cpf;
 
-    @Size(max = 200, message = "Endereço deve ter no máximo 200 caracteres")
+    @Size(max = 200)
+    @Schema(
+            description = "Endereço principal do cliente",
+            example = "Rua das Flores, 123 - Apt 201 - Centro - Rio de Janeiro/RJ - CEP: 20000-000",
+            maxLength = 200
+    )
     private String endereco;
 }
-

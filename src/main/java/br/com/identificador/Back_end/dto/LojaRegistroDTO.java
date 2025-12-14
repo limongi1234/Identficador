@@ -1,8 +1,7 @@
 package br.com.identificador.Back_end.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,35 +9,86 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Dados para registro ou atualização de loja")
 public class LojaRegistroDTO {
 
     @NotBlank(message = "Nome é obrigatório")
-    @Size(max = 100, message = "Nome deve ter no máximo 100 caracteres")
+    @Size(max = 100)
+    @Schema(
+            description = "Nome da loja/estabelecimento",
+            example = "Pizzaria Bella Napoli",
+            required = true,
+            maxLength = 100
+    )
     private String nome;
 
     @NotBlank(message = "Email é obrigatório")
-    @Email(message = "Email deve ter formato válido")
+    @Email(message = "Email deve ser válido")
+    @Size(max = 100)
+    @Schema(
+            description = "Email da loja (usado para login)",
+            example = "contato@bellanapoli.com",
+            required = true,
+            maxLength = 100
+    )
     private String email;
 
     @NotBlank(message = "Telefone é obrigatório")
-    @Size(max = 20, message = "Telefone deve ter no máximo 20 caracteres")
+    @Size(max = 20)
+    @Schema(
+            description = "Telefone comercial da loja",
+            example = "(21) 3333-4444",
+            required = true,
+            maxLength = 20
+    )
     private String telefone;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
+    @Size(min = 6, max = 100)
+    @Schema(
+            description = "Senha de acesso",
+            example = "senhaLoja123",
+            required = true,
+            minLength = 6,
+            maxLength = 100
+    )
     private String senha;
 
     @NotBlank(message = "CNPJ é obrigatório")
-    @Size(max = 18, message = "CNPJ deve ter no máximo 18 caracteres")
+    @Size(max = 20)
+    @Pattern(regexp = "\\d{14}", message = "CNPJ deve conter 14 dígitos")
+    @Schema(
+            description = "CNPJ da loja (apenas números)",
+            example = "12345678000190",
+            required = true,
+            pattern = "\\d{14}",
+            maxLength = 20
+    )
     private String cnpj;
 
     @NotBlank(message = "Endereço é obrigatório")
-    @Size(max = 200, message = "Endereço deve ter no máximo 200 caracteres")
+    @Size(max = 200)
+    @Schema(
+            description = "Endereço completo da loja",
+            example = "Av. Principal, 1000 - Sala 201 - Centro - Rio de Janeiro/RJ - CEP: 20000-000",
+            required = true,
+            maxLength = 200
+    )
     private String endereco;
 
-    @Size(max = 100, message = "Nome do responsável deve ter no máximo 100 caracteres")
-    private String nomeResponsavel;
+    @Size(max = 100)
+    @Schema(
+            description = "Nome do responsável pela loja",
+            example = "Carlos Oliveira",
+            maxLength = 100
+    )
+    private String responsavel;
 
-    @Size(max = 100, message = "Horário de funcionamento deve ter no máximo 100 caracteres")
+    @Size(max = 100)
+    @Schema(
+            description = "Horário de funcionamento",
+            example = "Segunda a Sexta: 11h às 23h / Sábado e Domingo: 11h às 00h",
+            maxLength = 100
+    )
     private String horarioFuncionamento;
 }
