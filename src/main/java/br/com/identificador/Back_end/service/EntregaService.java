@@ -15,15 +15,16 @@ import br.com.identificador.Back_end.repository.EntregadorRepository;
 import br.com.identificador.Back_end.repository.LojaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class EntregaService {
@@ -33,14 +34,15 @@ public class EntregaService {
     private final LojaRepository lojaRepository;
     private final ClienteRepository clienteRepository;
 
+    @Transactional
     public EntregaDTO criarEntrega(CriarEntregaDTO dto) {
-        log.info("Criando nova entrega para loja ID: {} e cliente ID: {}", dto.getLojaId(), dto.getClienteId());
+        log.info("Criando entrega - Loja: {}, Cliente: {}", dto.getLojaId(), dto.getClienteId());
 
         Loja loja = lojaRepository.findById(dto.getLojaId())
-                .orElseThrow(() -> new RuntimeException("Loja não encontrada"));
+                .orElseThrow(() -> new RuntimeException("Loja não encontrada: " + dto.getLojaId()));
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado: " + dto.getClienteId()));
 
         Entrega entrega = new Entrega();
         entrega.setLoja(loja);
@@ -49,157 +51,183 @@ public class EntregaService {
         entrega.setEnderecoDestino(dto.getEnderecoDestino());
         entrega.setProdutoDescricao(dto.getDescricaoProduto());
         entrega.setValorEntrega(dto.getValorEntrega());
-        entrega.setValorGorjeta(dto.getValorGorjeta());
+        entrega.setValorGorjeta(dto.getValorGorjeta() != null ? dto.getValorGorjeta() : BigDecimal.ZERO);
         entrega.setTempoEstimadoMinutos(dto.getTempoEstimadoMinutos());
         entrega.setObservacoes(dto.getObservacoes());
-        entrega.setStatusEntrega(StatusEntrega.PENDENTE);
+        entrega.setStatusEntrega(StatusEntrega.A_CAMINHO_COLETA);
+        entrega.setCriadoEm(LocalDateTime.now());
 
-        Entrega entregaSalva = entregaRepository.save(entrega);
-        log.info("Entrega criada com sucesso: ID {}", entregaSalva.getId());
+        Entrega saved = entregaRepository.save(entrega);
+        log.info("✅ Entrega criada ID: {}", saved.getId());
 
-        return converterParaDTO(entregaSalva);
+        return converterParaDTO(saved);
     }
 
+    @Transactional
     public EntregaDTO aceitarEntrega(Long entregaId, Long entregadorId) {
-        log.info("Entregador ID {} tentando aceitar entrega ID {}", entregadorId, entregaId);
+        log.info("Entregador {} aceitando entrega {}", entregadorId, entregaId);
 
         Entrega entrega = entregaRepository.findById(entregaId)
-                .orElseThrow(() -> new RuntimeException("Entrega não encontrada"));
+                .orElseThrow(() -> new RuntimeException("Entrega não encontrada: " + entregaId));
 
-        if (entrega.getStatusEntrega() != StatusEntrega.PENDENTE)
-            throw new RuntimeException("Esta entrega não está mais disponível");
+        if (entrega.getStatusEntrega() != StatusEntrega.A_CAMINHO_COLETA) {
+            throw new RuntimeException("Entrega não disponível para aceitação");
+        }
 
         Entregador entregador = entregadorRepository.findById(entregadorId)
-                .orElseThrow(() -> new RuntimeException("Entregador não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Entregador não encontrado: " + entregadorId));
 
-        if (entregador.getStatus() != StatusEntregador.ONLINE)
-            throw new RuntimeException("Entregador deve estar online para aceitar entregas");
+        if (entregador.getStatus() != StatusEntregador.DISPONIVEL) {
+            throw new RuntimeException("Entregador deve estar disponível");
+        }
 
-        // Verificar se o entregador já tem entregas em andamento
-        List<Entrega> entregasEmAndamento = entregaRepository.buscarEntregasEmAndamento(entregador);
-        if (!entregasEmAndamento.isEmpty())
-            throw new RuntimeException("Entregador já possui entregas em andamento");
+        // ✅ SEM QUALQUER MÉTODO ESPECIAL - só findAll() + filtro
+        List<Entrega> todasEntregas = entregaRepository.findAll(PageRequest.of(0, 100)).getContent();
+        long entregasDoEntregador = todasEntregas.stream()
+                .filter(e -> e.getEntregador() != null &&
+                        e.getEntregador().getId().equals(entregadorId) &&
+                        List.of(StatusEntrega.COLETANDO, StatusEntrega.A_CAMINHO_ENTREGA, StatusEntrega.CHEGOU_DESTINO)
+                                .contains(e.getStatusEntrega()))
+                .count();
+
+        if (entregasDoEntregador > 0) {
+            throw new RuntimeException("Entregador já tem entregas em andamento");
+        }
 
         entrega.setEntregador(entregador);
-        entrega.setStatusEntrega(StatusEntrega.ACEITA);
+        entrega.setStatusEntrega(StatusEntrega.COLETANDO);
         entrega.setIniciadoEm(LocalDateTime.now());
 
-        // Atualizar status do entregador
-        entregador.setStatus(StatusEntregador.EM_ENTREGA);
+        try {
+            entregador.setStatus(StatusEntregador.valueOf("EM_ENTREGA"));
+        } catch (IllegalArgumentException e) {
+            entregador.setStatus(StatusEntregador.valueOf("OCUPADO"));
+        }
+
         entregadorRepository.save(entregador);
+        Entrega saved = entregaRepository.save(entrega);
 
-        Entrega entregaAtualizada = entregaRepository.save(entrega);
-        log.info("Entrega aceita com sucesso pelo entregador: {}", entregador.getNome());
-
-        return converterParaDTO(entregaAtualizada);
+        log.info("✅ Entrega {} aceita por {}", entregaId, entregador.getNome());
+        return converterParaDTO(saved);
     }
 
+    @Transactional
     public EntregaDTO atualizarStatusEntrega(Long entregaId, AtualizarStatusEntregaDTO dto) {
-        log.info("Atualizando status da entrega ID {} para: {}", entregaId, dto.getNovoStatus());
+        log.info("Atualizando status entrega {} para {}", entregaId, dto.getNovoStatus());
 
         Entrega entrega = entregaRepository.findById(entregaId)
-                .orElseThrow(() -> new RuntimeException("Entrega não encontrada"));
+                .orElseThrow(() -> new RuntimeException("Entrega não encontrada: " + entregaId));
 
         StatusEntrega statusAnterior = entrega.getStatusEntrega();
         entrega.setStatusEntrega(dto.getNovoStatus());
 
-        // Atualizar timestamps específicos
         switch (dto.getNovoStatus()) {
-            case EM_ANDAMENTO:
+            case COLETANDO:
                 entrega.setIniciadoEm(LocalDateTime.now());
                 break;
             case ENTREGUE:
                 entrega.setFinalizadoEm(LocalDateTime.now());
-                atualizarEstatisticasEntregador(entrega.getEntregador());
-                entrega.getEntregador().setStatus(StatusEntregador.ONLINE);
-                entregadorRepository.save(entrega.getEntregador());
+                if (entrega.getEntregador() != null) {
+                    atualizarEstatisticasEntregador(entrega.getEntregador());
+                    entrega.getEntregador().setStatus(StatusEntregador.DISPONIVEL);
+                    entregadorRepository.save(entrega.getEntregador());
+                }
                 break;
             case CANCELADA:
-            case REJEITADA:
+            case PROBLEMA:
                 entrega.setCanceladoEm(LocalDateTime.now());
                 if (entrega.getEntregador() != null) {
-                    entrega.getEntregador().setStatus(StatusEntregador.ONLINE);
+                    entrega.getEntregador().setStatus(StatusEntregador.DISPONIVEL);
                     entregadorRepository.save(entrega.getEntregador());
                 }
                 break;
         }
 
-        if (dto.getObservacoes() != null) entrega.setObservacoes(dto.getObservacoes());
+        if (dto.getObservacoes() != null && !dto.getObservacoes().trim().isEmpty()) {
+            String obs = dto.getObservacoes();
+            if (entrega.getObservacoes() != null) {
+                obs = entrega.getObservacoes() + "\n" + dto.getObservacoes();
+            }
+            entrega.setObservacoes(obs);
+        }
 
-        Entrega entregaAtualizada = entregaRepository.save(entrega);
-        log.info("Status da entrega atualizado de {} para {}", statusAnterior, dto.getNovoStatus());
+        Entrega saved = entregaRepository.save(entrega);
+        log.info("✅ Status: {} → {}", statusAnterior, dto.getNovoStatus());
 
-        return converterParaDTO(entregaAtualizada);
+        return converterParaDTO(saved);
     }
 
     private void atualizarEstatisticasEntregador(Entregador entregador) {
-        // Implementar lógica de atualização de estatísticas
-        // Por exemplo: incrementar contador de entregas, calcular avaliação média, etc.
+        entregador.setTotalEntregas((entregador.getTotalEntregas() == null ? 0 : entregador.getTotalEntregas()) + 1);
+        entregadorRepository.save(entregador);
     }
 
+    @Transactional(readOnly = true)
     public List<EntregaDTO> buscarEntregasPendentes() {
-        log.debug("Buscando entregas pendentes");
-        return entregaRepository.buscarEntregasPendentes()
-                .stream()
+        // ✅ SEM MÉTODO ESPECIAL - findAll() + filtro
+        return entregaRepository.findAll(PageRequest.of(0, 50)).getContent().stream()
+                .filter(e -> e.getStatusEntrega() == StatusEntrega.A_CAMINHO_COLETA)
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<EntregaDTO> buscarEntregasDoEntregador(Long entregadorId) {
         Entregador entregador = entregadorRepository.findById(entregadorId)
                 .orElseThrow(() -> new RuntimeException("Entregador não encontrado"));
 
-        return entregaRepository.findByEntregadorOrderByCriadoEmDesc(entregador)
-                .stream()
+        return entregaRepository.findAll(PageRequest.of(0, 100)).getContent().stream()
+                .filter(e -> e.getEntregador() != null && e.getEntregador().getId().equals(entregadorId))
+                .sorted((e1, e2) -> e2.getCriadoEm().compareTo(e1.getCriadoEm()))
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<EntregaDTO> buscarEntregasDaLoja(Long lojaId) {
         Loja loja = lojaRepository.findById(lojaId)
                 .orElseThrow(() -> new RuntimeException("Loja não encontrada"));
 
-        return entregaRepository.findByLojaOrderByCriadoEmDesc(loja)
-                .stream()
+        return entregaRepository.findAll(PageRequest.of(0, 100)).getContent().stream()
+                .filter(e -> e.getLoja().getId().equals(lojaId))
+                .sorted((e1, e2) -> e2.getCriadoEm().compareTo(e1.getCriadoEm()))
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<EntregaDTO> buscarEntregasDoCliente(Long clienteId) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
 
-        return entregaRepository.findByClienteOrderByCriadoEmDesc(cliente)
-                .stream()
+        return entregaRepository.findAll(PageRequest.of(0, 100)).getContent().stream()
+                .filter(e -> e.getCliente().getId().equals(clienteId))
+                .sorted((e1, e2) -> e2.getCriadoEm().compareTo(e1.getCriadoEm()))
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
 
     private EntregaDTO converterParaDTO(Entrega entrega) {
-        EntregaDTO dto = new EntregaDTO();
-        dto.setId(entrega.getId());
-        dto.setLojaId(entrega.getLoja().getId());
-        dto.setLojaNome(entrega.getLoja().getNome());
-        dto.setClienteId(entrega.getCliente().getId());
-        dto.setClienteNome(entrega.getCliente().getNome());
-
-        if (entrega.getEntregador() != null) {
-            dto.setEntregadorId(entrega.getEntregador().getId());
-            dto.setEntregadorNome(entrega.getEntregador().getNome());
-        }
-
-        dto.setEnderecoOrigem(entrega.getEnderecoOrigem());
-        dto.setEnderecoDestino(entrega.getEnderecoDestino());
-        dto.setValorEntrega(entrega.getValorEntrega());
-        dto.setValorGorjeta(entrega.getValorGorjeta());
-        dto.setTempoEstimadoMinutos(entrega.getTempoEstimadoMinutos());
-        dto.setObservacoes(entrega.getObservacoes());
-        dto.setStatusEntrega(entrega.getStatusEntrega());
-        dto.setCriadoEm(entrega.getCriadoEm());
-        dto.setIniciadoEm(entrega.getIniciadoEm());
-        dto.setFinalizadoEm(entrega.getFinalizadoEm());
-        dto.setCanceladoEm(entrega.getCanceladoEm());
-
-        return dto;
+        return EntregaDTO.builder()
+                .id(entrega.getId())
+                .entregadorId(entrega.getEntregador() != null ? entrega.getEntregador().getId() : null)
+                .entregadorNome(entrega.getEntregador() != null ? entrega.getEntregador().getNome() : null)
+                .lojaId(entrega.getLoja().getId())
+                .lojaNome(entrega.getLoja().getNome())
+                .clienteId(entrega.getCliente().getId())
+                .clienteNome(entrega.getCliente().getNome())
+                .enderecoOrigem(entrega.getEnderecoOrigem())
+                .enderecoDestino(entrega.getEnderecoDestino())
+                .produtoDescricao(entrega.getProdutoDescricao())
+                .statusEntrega(entrega.getStatusEntrega())
+                .valorEntrega(entrega.getValorEntrega())
+                .valorGorjeta(entrega.getValorGorjeta())
+                .tempoEstimadoMinutos(entrega.getTempoEstimadoMinutos())
+                .observacoes(entrega.getObservacoes())
+                .criadoEm(entrega.getCriadoEm())
+                .iniciadoEm(entrega.getIniciadoEm())
+                .finalizadoEm(entrega.getFinalizadoEm())
+                .canceladoEm(entrega.getCanceladoEm())
+                .build();
     }
 }

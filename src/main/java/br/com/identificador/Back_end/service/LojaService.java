@@ -1,6 +1,5 @@
 package br.com.identificador.Back_end.service;
 
-
 import br.com.identificador.Back_end.dto.LojaRegistroDTO;
 import br.com.identificador.Back_end.model.Loja;
 import br.com.identificador.Back_end.repository.LojaRepository;

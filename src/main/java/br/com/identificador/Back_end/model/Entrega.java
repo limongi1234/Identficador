@@ -40,7 +40,7 @@ public class Entrega {
     @Schema(description = "Endereço de coleta do produto", example = "Av. Principal, 1000 - Centro")
     private String enderecoOrigem;
 
-    @Column(name = "endereco_destino")
+    @Column(name = "endereco_destino", nullable = false)
     @Schema(description = "Endereço de entrega do produto", example = "Rua das Flores, 123 - Bairro", required = true)
     private String enderecoDestino;
 
@@ -49,14 +49,16 @@ public class Entrega {
     private String produtoDescricao;
 
     @Enumerated(EnumType.STRING)
-    @Schema(description = "Status atual da entrega", example = "PENDENTE", defaultValue = "PENDENTE")
-    private StatusEntrega statusEntrega = StatusEntrega.PENDENTE;
+    @Column(name = "status_entrega", nullable = false)
+    @Schema(description = "Status atual da entrega", example = "A_CAMINHO_COLETA",
+            allowableValues = {"A_CAMINHO_COLETA", "COLETANDO", "A_CAMINHO_ENTREGA", "CHEGOU_DESTINO", "ENTREGUE", "CANCELADA", "PROBLEMA"})
+    private StatusEntrega statusEntrega;
 
-    @Column(name = "valor_entrega")
+    @Column(name = "valor_entrega", precision = 10, scale = 2)
     @Schema(description = "Valor do frete da entrega", example = "15.50")
     private BigDecimal valorEntrega;
 
-    @Column(name = "valor_gorjeta")
+    @Column(name = "valor_gorjeta", precision = 10, scale = 2)
     @Schema(description = "Valor da gorjeta para o entregador", example = "5.00")
     private BigDecimal valorGorjeta;
 
@@ -64,11 +66,11 @@ public class Entrega {
     @Schema(description = "Tempo estimado de entrega em minutos", example = "30")
     private Integer tempoEstimadoMinutos;
 
-    @Column(name = "observacoes")
+    @Column(name = "observacoes", length = 500)
     @Schema(description = "Observações adicionais sobre a entrega", example = "Tocar interfone apartamento 201")
     private String observacoes;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     @Schema(description = "Data e hora de criação da entrega", example = "2024-01-15T14:30:00", accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime criadoEm = LocalDateTime.now();
 
@@ -83,4 +85,18 @@ public class Entrega {
     @Column(name = "cancelled_at")
     @Schema(description = "Data e hora de cancelamento da entrega (se aplicável)", example = "2024-01-15T14:50:00", accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime canceladoEm;
+
+    // Construtor auxiliar para criação
+    public Entrega(Loja loja, Cliente cliente, String enderecoOrigem, String enderecoDestino,
+                   String produtoDescricao, BigDecimal valorEntrega, Integer tempoEstimadoMinutos) {
+        this.loja = loja;
+        this.cliente = cliente;
+        this.enderecoOrigem = enderecoOrigem;
+        this.enderecoDestino = enderecoDestino;
+        this.produtoDescricao = produtoDescricao;
+        this.valorEntrega = valorEntrega;
+        this.tempoEstimadoMinutos = tempoEstimadoMinutos;
+        this.statusEntrega = StatusEntrega.A_CAMINHO_COLETA; // Status inicial correto
+        this.criadoEm = LocalDateTime.now();
+    }
 }
