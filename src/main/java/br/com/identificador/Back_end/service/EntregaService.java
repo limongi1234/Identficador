@@ -70,17 +70,15 @@ public class EntregaService {
         Entrega entrega = entregaRepository.findById(entregaId)
                 .orElseThrow(() -> new RuntimeException("Entrega não encontrada: " + entregaId));
 
-        if (entrega.getStatusEntrega() != StatusEntrega.A_CAMINHO_COLETA) {
+        if (entrega.getStatusEntrega() != StatusEntrega.A_CAMINHO_COLETA) 
             throw new RuntimeException("Entrega não disponível para aceitação");
-        }
-
+        
         Entregador entregador = entregadorRepository.findById(entregadorId)
                 .orElseThrow(() -> new RuntimeException("Entregador não encontrado: " + entregadorId));
 
-        if (entregador.getStatus() != StatusEntregador.DISPONIVEL) {
+        if (entregador.getStatus() != StatusEntregador.DISPONIVEL) 
             throw new RuntimeException("Entregador deve estar disponível");
-        }
-
+        
         // ✅ SEM QUALQUER MÉTODO ESPECIAL - só findAll() + filtro
         List<Entrega> todasEntregas = entregaRepository.findAll(PageRequest.of(0, 100)).getContent();
         long entregasDoEntregador = todasEntregas.stream()
@@ -90,10 +88,9 @@ public class EntregaService {
                                 .contains(e.getStatusEntrega()))
                 .count();
 
-        if (entregasDoEntregador > 0) {
+        if (entregasDoEntregador > 0) 
             throw new RuntimeException("Entregador já tem entregas em andamento");
-        }
-
+        
         entrega.setEntregador(entregador);
         entrega.setStatusEntrega(StatusEntrega.COLETANDO);
         entrega.setIniciadoEm(LocalDateTime.now());
@@ -145,9 +142,9 @@ public class EntregaService {
 
         if (dto.getObservacoes() != null && !dto.getObservacoes().trim().isEmpty()) {
             String obs = dto.getObservacoes();
-            if (entrega.getObservacoes() != null) {
+            if (entrega.getObservacoes() != null) 
                 obs = entrega.getObservacoes() + "\n" + dto.getObservacoes();
-            }
+            
             entrega.setObservacoes(obs);
         }
 
