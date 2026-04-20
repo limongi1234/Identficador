@@ -23,17 +23,17 @@ public class Entregador extends User {
 
     @NotBlank
     @Size(max = 20)
-    @Schema(description = "CPF do entregador (apenas números)", example = "12345678900", required = true, maxLength = 20)
+    @Schema(description = "CPF do entregador (apenas números)", example = "12345678900", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 20)
     private String cpf;
 
     @NotBlank
     @Size(max = 20)
-    @Schema(description = "RG do entregador", example = "123456789", required = true, maxLength = 20)
+    @Schema(description = "RG do entregador", example = "123456789", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 20)
     private String rg;
 
     @NotBlank
     @Size(max = 20)
-    @Schema(description = "CNH (Carteira Nacional de Habilitação) do entregador", example = "12345678900", required = true, maxLength = 20)
+    @Schema(description = "CNH (Carteira Nacional de Habilitação) do entregador", example = "12345678900", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 20)
     private String cnh;
 
     @Column(name = "qr_code_uuid")

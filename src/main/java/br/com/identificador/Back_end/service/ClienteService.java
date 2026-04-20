@@ -22,26 +22,26 @@ public class ClienteService {
     private final PasswordEncoder passwordEncoder;
     
     public Cliente registrarCliente(ClienteRegistroDTO dto) {
-        log.info("Registrando novo cliente com email: {}", dto.getEmail());
-        
-        if (clienteRepository.existsByEmail(dto.getEmail())) {
+        log.info("Registrando novo cliente com email: {}", dto.email());
+
+        if (clienteRepository.existsByEmail(dto.email())) {
             throw new RuntimeException("Email já cadastrado");
         }
         
-        if (dto.getCpf() != null && !dto.getCpf().trim().isEmpty() && clienteRepository.existsByCpf(dto.getCpf())) {
+        if (dto.cpf() != null && !dto.cpf().trim().isEmpty() && clienteRepository.existsByCpf(dto.cpf())) {
             throw new RuntimeException("CPF já cadastrado");
         }
         
         Cliente cliente = new Cliente(
-            dto.getNome(),
-            dto.getEmail(),
-            dto.getTelefone(),
-            passwordEncoder.encode(dto.getSenha())
+            dto.nome(),
+            dto.email(),
+            dto.telefone(),
+            passwordEncoder.encode(dto.senha())
         );
         
-        cliente.setCpf(dto.getCpf());
-        cliente.setEndereco(dto.getEndereco());
-        
+        cliente.setCpf(dto.cpf());
+        cliente.setEndereco(dto.endereco());
+
         Cliente clienteSalvo = clienteRepository.save(cliente);
         log.info("Cliente registrado com sucesso: ID {}", clienteSalvo.getId());
         return clienteSalvo;
@@ -68,18 +68,18 @@ public class ClienteService {
             .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
         
         // Verificar se email não está sendo usado por outro cliente
-        if (!cliente.getEmail().equals(dto.getEmail()) && clienteRepository.existsByEmail(dto.getEmail())) {
+        if (!cliente.getEmail().equals(dto.email()) && clienteRepository.existsByEmail(dto.email())) {
             throw new RuntimeException("Email já está sendo usado por outro cliente");
         }
         
-        cliente.setNome(dto.getNome());
-        cliente.setEmail(dto.getEmail());
-        cliente.setTelefone(dto.getTelefone());
-        cliente.setCpf(dto.getCpf());
-        cliente.setEndereco(dto.getEndereco());
-        
-        if (dto.getSenha() != null && !dto.getSenha().trim().isEmpty()) {
-            cliente.setSenha(passwordEncoder.encode(dto.getSenha()));
+        cliente.setNome(dto.nome());
+        cliente.setEmail(dto.email());
+        cliente.setTelefone(dto.telefone());
+        cliente.setCpf(dto.cpf());
+        cliente.setEndereco(dto.endereco());
+
+        if (dto.senha() != null && !dto.senha().trim().isEmpty()) {
+            cliente.setSenha(passwordEncoder.encode(dto.senha()));
         }
         
         return clienteRepository.save(cliente);

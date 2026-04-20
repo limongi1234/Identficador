@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Objeto para configuração de geração de QR Code personalizado")
 public class QRCode {
 
-    @Schema(description = "Texto a ser codificado no QR Code", example = "https://identificador.com.br/entregador/550e8400-e29b-41d4-a716-446655440000", required = true)
+    @Schema(description = "Texto a ser codificado no QR Code", example = "https://identificador.com.br/entregador/550e8400-e29b-41d4-a716-446655440000", requiredMode = Schema.RequiredMode.REQUIRED)
     private String text;
 
     @Schema(description = "Largura da imagem do QR Code em pixels", example = "300", defaultValue = "300", minimum = "100", maximum = "1000")

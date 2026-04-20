@@ -26,26 +26,26 @@ public class EntregadorService {
     @Transactional
     public Entregador registrarEntregador(EntregadorRegistroDTO dto) {
         // Validações usando Streams
-        validarEmailUnico(dto.getEmail());
-        validarCpfUnico(dto.getCpf());
+        validarEmailUnico(dto.email());
+        validarCpfUnico(dto.cpf());
 
         // Criar entregador
         Entregador entregador = new Entregador(
-                dto.getNome(),
-                dto.getEmail(),
-                dto.getTelefone(),
-                passwordEncoder.encode(dto.getSenha()),
-                dto.getCpf(),
-                dto.getRg(),
-                dto.getCnh()
+                dto.nome(),
+                dto.email(),
+                dto.telefone(),
+                passwordEncoder.encode(dto.senha()),
+                dto.cpf(),
+                dto.rg(),
+                dto.cnh()
         );
 
         // Gerar QR Code UUID único
         entregador.setQrCodeUuid(UUID.randomUUID().toString());
 
         // Adicionar aplicativos usando Optional e Stream
-        Set<Aplicativo> aplicativos = dto.getAplicativos() != null 
-            ? dto.getAplicativos().stream()
+        Set<Aplicativo> aplicativos = dto.aplicativos() != null
+            ? dto.aplicativos().stream()
                 .collect(Collectors.toSet())
             : Set.of();
         entregador.setAplicativos(aplicativos);
@@ -208,27 +208,27 @@ public class EntregadorService {
         Entregador entregador = buscarPorId(id);
 
         // Verificar se email já existe em outro entregador
-        if (!entregador.getEmail().equals(dto.getEmail())) validarEmailUnico(dto.getEmail());
+        if (!entregador.getEmail().equals(dto.email())) validarEmailUnico(dto.email());
 
         // Verificar se CPF já existe em outro entregador
-        if (!entregador.getCpf().equals(dto.getCpf())) validarCpfUnico(dto.getCpf());
+        if (!entregador.getCpf().equals(dto.cpf())) validarCpfUnico(dto.cpf());
 
         // Atualizar dados
-        entregador.setNome(dto.getNome());
-        entregador.setEmail(dto.getEmail());
-        entregador.setTelefone(dto.getTelefone());
-        entregador.setCpf(dto.getCpf());
-        entregador.setRg(dto.getRg());
-        entregador.setCnh(dto.getCnh());
+        entregador.setNome(dto.nome());
+        entregador.setEmail(dto.email());
+        entregador.setTelefone(dto.telefone());
+        entregador.setCpf(dto.cpf());
+        entregador.setRg(dto.rg());
+        entregador.setCnh(dto.cnh());
 
         // Atualizar senha apenas se fornecida usando Optional
-        if (dto.getSenha() != null && !dto.getSenha().isBlank())
-            entregador.setSenha(passwordEncoder.encode(dto.getSenha()));
+        if (dto.senha() != null && !dto.senha().isBlank())
+            entregador.setSenha(passwordEncoder.encode(dto.senha()));
 
 
         // Atualizar aplicativos usando Stream
-        if (dto.getAplicativos() != null) {
-            Set<Aplicativo> aplicativosValidados = dto.getAplicativos().stream()
+        if (dto.aplicativos() != null) {
+            Set<Aplicativo> aplicativosValidados = dto.aplicativos().stream()
                     .filter(app -> app != null)
                     .collect(Collectors.toSet());
             entregador.setAplicativos(aplicativosValidados);

@@ -28,7 +28,7 @@ public class Entrega {
 
     @ManyToOne
     @JoinColumn(name = "loja_id")
-    @Schema(description = "Loja origem da entrega", required = true)
+    @Schema(description = "Loja origem da entrega", requiredMode = Schema.RequiredMode.REQUIRED)
     private Loja loja;
 
     @ManyToOne
@@ -41,7 +41,7 @@ public class Entrega {
     private String enderecoOrigem;
 
     @Column(name = "endereco_destino", nullable = false)
-    @Schema(description = "Endereço de entrega do produto", example = "Rua das Flores, 123 - Bairro", required = true)
+    @Schema(description = "Endereço de entrega do produto", example = "Rua das Flores, 123 - Bairro", requiredMode = Schema.RequiredMode.REQUIRED)
     private String enderecoDestino;
 
     @Column(name = "produto_descricao")

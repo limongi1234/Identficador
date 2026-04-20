@@ -104,20 +104,20 @@ public class UserService {
         
         return userRepository.findById(id)
                 .map(user -> {
-                    Optional.ofNullable(dto.getNome())
+                    Optional.ofNullable(dto.nome())
                             .filter(nome -> !nome.isBlank())
                             .ifPresent(user::setNome);
                     
-                    Optional.ofNullable(dto.getEmail())
+                    Optional.ofNullable(dto.email())
                             .filter(email -> !email.isBlank())
                             .filter(email -> !existsByEmail(email) || email.equals(user.getEmail()))
                             .ifPresent(user::setEmail);
                     
-                    Optional.ofNullable(dto.getTelefone())
+                    Optional.ofNullable(dto.telefone())
                             .filter(telefone -> !telefone.isBlank())
                             .ifPresent(user::setTelefone);
                     
-                    Optional.ofNullable(dto.getSenha())
+                    Optional.ofNullable(dto.senha())
                             .filter(senha -> !senha.isBlank())
                             .map(passwordEncoder::encode)
                             .ifPresent(user::setSenha);
@@ -159,13 +159,13 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public Optional<User> validateLogin(LoginDTO loginDTO) {
-        log.info("Validando login para email: {}", loginDTO.getEmail());
+        log.info("Validando login para email: {}", loginDTO.email());
         
-        return userRepository.findByEmail(loginDTO.getEmail())
+        return userRepository.findByEmail(loginDTO.email())
                 .filter(user -> {
-                    boolean matches = passwordEncoder.matches(loginDTO.getSenha(), user.getSenha());
-                    if (matches) log.info("Login validado com sucesso para: {}", loginDTO.getEmail());
-                     else log.warn("Senha inválida para email: {}", loginDTO.getEmail());
+                    boolean matches = passwordEncoder.matches(loginDTO.senha(), user.getSenha());
+                    if (matches) log.info("Login validado com sucesso para: {}", loginDTO.email());
+                     else log.warn("Senha inválida para email: {}", loginDTO.email());
                      return matches;
                 });
     }

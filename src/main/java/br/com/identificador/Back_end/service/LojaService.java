@@ -22,27 +22,27 @@ public class LojaService {
     private final PasswordEncoder passwordEncoder;
     
     public Loja registrarLoja(LojaRegistroDTO dto) {
-        log.info("Registrando nova loja com email: {}", dto.getEmail());
-        
-        if (lojaRepository.existsByEmail(dto.getEmail()))
+        log.info("Registrando nova loja com email: {}", dto.email());
+
+        if (lojaRepository.existsByEmail(dto.email()))
             throw new RuntimeException("Email já cadastrado");
 
-        if (lojaRepository.existsByCnpj(dto.getCnpj()))
+        if (lojaRepository.existsByCnpj(dto.cnpj()))
             throw new RuntimeException("CNPJ já cadastrado");
 
         
         Loja loja = new Loja(
-            dto.getNome(),
-            dto.getEmail(),
-            dto.getTelefone(),
-            passwordEncoder.encode(dto.getSenha()),
-            dto.getCnpj(),
-            dto.getEndereco()
+            dto.nome(),
+            dto.email(),
+            dto.telefone(),
+            passwordEncoder.encode(dto.senha()),
+            dto.cnpj(),
+            dto.endereco()
         );
         
-        loja.setResponsavel(dto.getNomeResponsavel());
-        loja.setHorarioFuncionamento(dto.getHorarioFuncionamento());
-        
+        loja.setResponsavel(dto.nomeResponsavel());
+        loja.setHorarioFuncionamento(dto.horarioFuncionamento());
+
         Loja lojaSalva = lojaRepository.save(loja);
         log.info("Loja registrada com sucesso: ID {}", lojaSalva.getId());
         return lojaSalva;
@@ -73,18 +73,18 @@ public class LojaService {
             .orElseThrow(() -> new RuntimeException("Loja não encontrada"));
         
         // Verificar se email não está sendo usado por outra loja
-        if (!loja.getEmail().equals(dto.getEmail()) && lojaRepository.existsByEmail(dto.getEmail()))
+        if (!loja.getEmail().equals(dto.email()) && lojaRepository.existsByEmail(dto.email()))
             throw new RuntimeException("Email já está sendo usado por outra loja");
 
-        loja.setNome(dto.getNome());
-        loja.setEmail(dto.getEmail());
-        loja.setTelefone(dto.getTelefone());
-        loja.setEndereco(dto.getEndereco());
-        loja.setResponsavel(dto.getNomeResponsavel());
-        loja.setHorarioFuncionamento(dto.getHorarioFuncionamento());
+        loja.setNome(dto.nome());
+        loja.setEmail(dto.email());
+        loja.setTelefone(dto.telefone());
+        loja.setEndereco(dto.endereco());
+        loja.setResponsavel(dto.nomeResponsavel());
+        loja.setHorarioFuncionamento(dto.horarioFuncionamento());
         
-        if (dto.getSenha() != null && !dto.getSenha().trim().isEmpty())
-            loja.setSenha(passwordEncoder.encode(dto.getSenha()));
+        if (dto.senha() != null && !dto.senha().trim().isEmpty())
+            loja.setSenha(passwordEncoder.encode(dto.senha()));
 
         return lojaRepository.save(loja);
     }

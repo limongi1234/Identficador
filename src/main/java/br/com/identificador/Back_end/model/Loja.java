@@ -18,12 +18,12 @@ public class Loja extends User {
 
     @NotBlank
     @Size(max = 20)
-    @Schema(description = "CNPJ da loja (apenas números)", example = "12345678000190", required = true, maxLength = 20)
+    @Schema(description = "CNPJ da loja (apenas números)", example = "12345678000190", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 20)
     private String cnpj;
 
     @NotBlank
     @Size(max = 200)
-    @Schema(description = "Endereço completo da loja", example = "Av. Principal, 1000 - Sala 201 - Centro - Rio de Janeiro/RJ", required = true, maxLength = 200)
+    @Schema(description = "Endereço completo da loja", example = "Av. Principal, 1000 - Sala 201 - Centro - Rio de Janeiro/RJ", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 200)
     private String endereco;
 
     @Size(max = 100)

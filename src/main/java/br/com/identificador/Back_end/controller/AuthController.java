@@ -120,18 +120,18 @@ public class AuthController {
     })
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO) {
         try {
-            log.info("Tentativa de login para: {}", loginDTO.getEmail());
+            log.info("Tentativa de login para: {}", loginDTO.email());
 
             // Autentica o usuário
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginDTO.getEmail(),
-                            loginDTO.getSenha()
+                            loginDTO.email(),
+                            loginDTO.senha()
                     )
             );
 
             // Busca dados completos do usuário
-            User user = userDetailsService.findCompleteUserByEmail(loginDTO.getEmail())
+            User user = userDetailsService.findCompleteUserByEmail(loginDTO.email())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
             // Determina o tipo de usuário
@@ -170,11 +170,11 @@ public class AuthController {
                     "role", role
             ));
 
-            log.info("Login bem-sucedido para: {} (Tipo: {})", loginDTO.getEmail(), userType);
+            log.info("Login bem-sucedido para: {} (Tipo: {})", loginDTO.email(), userType);
             return ResponseEntity.ok(response);
 
         } catch (AuthenticationException e) {
-            log.error("Falha na autenticação para: {}", loginDTO.getEmail());
+            log.error("Falha na autenticação para: {}", loginDTO.email());
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Credenciais inválidas");
             errorResponse.put("message", "Email ou senha incorretos");

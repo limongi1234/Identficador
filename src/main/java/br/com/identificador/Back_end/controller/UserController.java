@@ -167,7 +167,7 @@ public class UserController {
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
         } catch (AuthenticationException e) {
-            log.warn("Falha de autenticação para email: {}", loginDTO.getEmail());
+            log.warn("Falha de autenticação para email: {}", loginDTO.email());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             log.error("Erro no login: {}", e.getMessage(), e);

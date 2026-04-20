@@ -2,19 +2,14 @@ package br.com.identificador.Back_end.dto;
 
 import br.com.identificador.Back_end.model.enuns.StatusEntrega;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class AtualizarStatusEntregaDTO {
+public record AtualizarStatusEntregaDTO(
 
     @NotNull(message = "Status da entrega é obrigatório")
-    private StatusEntrega novoStatus;
+    StatusEntrega novoStatus,
 
-    private String motivoCancelamento;
+    String motivoCancelamento,
 
-    private String observacoes;
-}
+    String observacoes
+
+) {}

@@ -27,23 +27,23 @@ public abstract class User {
 
     @NotBlank
     @Size(max = 100)
-    @Schema(description = "Nome completo do usuário", example = "João da Silva", required = true, maxLength = 100)
+    @Schema(description = "Nome completo do usuário", example = "João da Silva", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 100)
     private String nome;
 
     @NotBlank
     @Email
     @Size(max = 100)
-    @Schema(description = "Email do usuário (usado para login)", example = "joao.silva@email.com", required = true, maxLength = 100)
+    @Schema(description = "Email do usuário (usado para login)", example = "joao.silva@email.com", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 100)
     private String email;
 
     @NotBlank
     @Size(max = 20)
-    @Schema(description = "Telefone de contato", example = "(21) 98765-4321", required = true, maxLength = 20)
+    @Schema(description = "Telefone de contato", example = "(21) 98765-4321", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 20)
     private String telefone;
 
     @NotBlank
     @Size(min = 6, max = 100)
-    @Schema(description = "Senha de acesso", example = "senha123", required = true, minLength = 6, maxLength = 100, accessMode = Schema.AccessMode.WRITE_ONLY)
+    @Schema(description = "Senha de acesso", example = "senha123", requiredMode = Schema.RequiredMode.REQUIRED, minLength = 6, maxLength = 100, accessMode = Schema.AccessMode.WRITE_ONLY)
     private String senha;
 
     @Column(name = "created_at")

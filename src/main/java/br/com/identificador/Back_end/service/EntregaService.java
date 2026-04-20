@@ -35,24 +35,24 @@ public class EntregaService {
 
     @Transactional
     public EntregaDTO criarEntrega(CriarEntregaDTO dto) {
-        log.info("Criando entrega - Loja: {}, Cliente: {}", dto.getLojaId(), dto.getClienteId());
+        log.info("Criando entrega - Loja: {}, Cliente: {}", dto.lojaId(), dto.clienteId());
 
-        Loja loja = lojaRepository.findById(dto.getLojaId())
-                .orElseThrow(() -> new RuntimeException("Loja não encontrada: " + dto.getLojaId()));
+        Loja loja = lojaRepository.findById(dto.lojaId())
+                .orElseThrow(() -> new RuntimeException("Loja não encontrada: " + dto.lojaId()));
 
-        Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado: " + dto.getClienteId()));
+        Cliente cliente = clienteRepository.findById(dto.clienteId())
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado: " + dto.clienteId()));
 
         Entrega entrega = new Entrega();
         entrega.setLoja(loja);
         entrega.setCliente(cliente);
-        entrega.setEnderecoOrigem(dto.getEnderecoOrigem());
-        entrega.setEnderecoDestino(dto.getEnderecoDestino());
-        entrega.setProdutoDescricao(dto.getDescricaoProduto());
-        entrega.setValorEntrega(dto.getValorEntrega());
-        entrega.setValorGorjeta(dto.getValorGorjeta() != null ? dto.getValorGorjeta() : BigDecimal.ZERO);
-        entrega.setTempoEstimadoMinutos(dto.getTempoEstimadoMinutos());
-        entrega.setObservacoes(dto.getObservacoes());
+        entrega.setEnderecoOrigem(dto.enderecoOrigem());
+        entrega.setEnderecoDestino(dto.enderecoDestino());
+        entrega.setProdutoDescricao(dto.descricaoProduto());
+        entrega.setValorEntrega(dto.valorEntrega());
+        entrega.setValorGorjeta(dto.valorGorjeta() != null ? dto.valorGorjeta() : BigDecimal.ZERO);
+        entrega.setTempoEstimadoMinutos(dto.tempoEstimadoMinutos());
+        entrega.setObservacoes(dto.observacoes());
         entrega.setStatusEntrega(StatusEntrega.A_CAMINHO_COLETA);
         entrega.setCriadoEm(LocalDateTime.now());
 
@@ -103,15 +103,15 @@ public class EntregaService {
 
     @Transactional
     public EntregaDTO atualizarStatusEntrega(Long entregaId, AtualizarStatusEntregaDTO dto) {
-        log.info("Atualizando status entrega {} para {}", entregaId, dto.getNovoStatus());
+        log.info("Atualizando status entrega {} para {}", entregaId, dto.novoStatus());
 
         Entrega entrega = entregaRepository.findById(entregaId)
                 .orElseThrow(() -> new RuntimeException("Entrega não encontrada: " + entregaId));
 
         StatusEntrega statusAnterior = entrega.getStatusEntrega();
-        entrega.setStatusEntrega(dto.getNovoStatus());
+        entrega.setStatusEntrega(dto.novoStatus());
 
-        switch (dto.getNovoStatus()) {
+        switch (dto.novoStatus()) {
             case COLETANDO:
                 entrega.setIniciadoEm(LocalDateTime.now());
                 break;
@@ -133,16 +133,16 @@ public class EntregaService {
                 break;
         }
 
-        if (dto.getObservacoes() != null && !dto.getObservacoes().trim().isEmpty()) {
-            String obs = dto.getObservacoes();
+        if (dto.observacoes() != null && !dto.observacoes().trim().isEmpty()) {
+            String obs = dto.observacoes();
             if (entrega.getObservacoes() != null)
-                obs = entrega.getObservacoes() + "\n" + dto.getObservacoes();
+                obs = entrega.getObservacoes() + "\n" + dto.observacoes();
 
             entrega.setObservacoes(obs);
         }
 
         Entrega saved = entregaRepository.save(entrega);
-        log.info("✅ Status: {} → {}", statusAnterior, dto.getNovoStatus());
+        log.info("✅ Status: {} → {}", statusAnterior, dto.novoStatus());
         return toDTO(saved);
     }
 
@@ -188,26 +188,27 @@ public class EntregaService {
     }
 
     private EntregaDTO toDTO(Entrega entrega) {
-        return EntregaDTO.builder()
-                .id(entrega.getId())
-                .entregadorId(entrega.getEntregador() != null ? entrega.getEntregador().getId() : null)
-                .nomeEntregador(entrega.getEntregador() != null ? entrega.getEntregador().getNome() : null)
-                .lojaId(entrega.getLoja().getId())
-                .nomeLoja(entrega.getLoja().getNome())
-                .clienteId(entrega.getCliente().getId())
-                .nomeCliente(entrega.getCliente().getNome())
-                .enderecoOrigem(entrega.getEnderecoOrigem())
-                .enderecoDestino(entrega.getEnderecoDestino())
-                .descricaoProduto(entrega.getProdutoDescricao())
-                .statusEntrega(entrega.getStatusEntrega())
-                .valorEntrega(entrega.getValorEntrega())
-                .valorGorjeta(entrega.getValorGorjeta())
-                .tempoEstimadoMinutos(entrega.getTempoEstimadoMinutos())
-                .observacoes(entrega.getObservacoes())
-                .criadoEm(entrega.getCriadoEm())
-                .iniciadoEm(entrega.getIniciadoEm())
-                .finalizadoEm(entrega.getFinalizadoEm())
-                .canceladoEm(entrega.getCanceladoEm())
-                .build();
+        return new EntregaDTO(
+                entrega.getId(),
+                entrega.getEntregador() != null ? entrega.getEntregador().getId() : null,
+                entrega.getEntregador() != null ? entrega.getEntregador().getNome() : null,
+                entrega.getLoja().getId(),
+                entrega.getLoja().getNome(),
+                entrega.getCliente().getId(),
+                entrega.getCliente().getNome(),
+                entrega.getEnderecoOrigem(),
+                entrega.getEnderecoDestino(),
+                entrega.getProdutoDescricao(),
+                entrega.getStatusEntrega(),
+                entrega.getValorEntrega(),
+                entrega.getValorGorjeta(),
+                entrega.getValorEntrega().add(entrega.getValorGorjeta() != null ? entrega.getValorGorjeta() : BigDecimal.ZERO),
+                entrega.getTempoEstimadoMinutos(),
+                entrega.getObservacoes(),
+                entrega.getCriadoEm(),
+                entrega.getIniciadoEm(),
+                entrega.getFinalizadoEm(),
+                entrega.getCanceladoEm()
+        );
     }
 }
